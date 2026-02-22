@@ -1,0 +1,69 @@
+# Environnement virtuel
+venv/
+env/
+ENV/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Notebooks
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# Données brutes (ne pas versionner)
+data/raw/
+!data/raw/.gitkeep
+
+# Données traitées et splits (optionnel : à commenter si vous voulez les versionner)
+# data/processed/
+# data/train_test/
+# !data/processed/.gitkeep
+# !data/train_test/.gitkeep
+
+# Modèles (souvent volumineux)
+models/
+!models/.gitkeep
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Système
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Fichiers de logs
+*.log
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Unit test / coverage
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.pytest_cache/
+
+# Jupyter
+*.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Mes propres fichiers de configuration (optionnel)
+*.swp
+*.swo
+*~
