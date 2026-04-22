@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>RetailIQ — Customer Intelligence Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:       #f0f4f8;
+  --surface:  #ffffff;
+  --border:   #d0d9e4;
+  --accent:   #0099cc;
+  --accent2:  #6040e0;
+  --green:    #00b860;
+  --orange:   #e87020;
+  --red:      #e02040;
+  --text:     #0d1520;
+  --muted:    #6b7a8d;
+  --card:     #ffffff;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,153,204,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,153,204,0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrapper { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+/* ── Header ── */
+header {
+  padding: 32px 0 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.5rem;
+  letter-spacing: -0.5px;
+}
+.logo span { color: var(--accent); }
+.status-dot {
+  width: 8px; height: 8px;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--green);
+  display: inline-block;
+  margin-right: 8px;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.status-label { font-size: 0.75rem; color: var(--muted); }
+
+/* ── Tabs ── */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin: 28px 0;
+  background: var(--surface);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  width: fit-content;
+}
+.tab {
+  padding: 10px 24px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+.tab.active {
+  background: var(--accent);
+  color: #fff;
+}
+.tab:hover:not(.active) { color: var(--text); }
+
+/* ── Panels ── */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── Section title ── */
+.section-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-title::before {
+  content: '';
+  width: 3px;
+  height: 18px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* ── Form grid ── */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.field input, .field select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+.field input:focus, .field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,153,204,0.15);
+}
+.field select option { background: var(--surface); }
+
+/* ── Submit button ── */
+.btn-predict {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  border-radius: 10px;
+  padding: 14px 36px;
+  color: #fff;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+.btn-predict:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,153,204,0.30);
+}
+.btn-predict:active { transform: translateY(0); }
+.btn-predict.loading { opacity: 0.7; cursor: wait; }
+
+/* ── Result card ── */
+.result-card {
+  margin-top: 28px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px;
+  display: none;
+  animation: fadeUp 0.3s ease;
+}
+.result-card.visible { display: block; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.result-main {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+.result-value {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 3rem;
+  line-height: 1;
+}
+.result-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Syne', sans-serif;
+  letter-spacing: 0.5px;
+  margin-top: 6px;
+}
+
+.result-message {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* Gauge bar */
+.gauge-wrap { margin-top: 16px; }
+.gauge-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.gauge-track {
+  height: 6px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.gauge-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* Action box */
+.action-box {
+  margin-top: 16px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  border-left: 3px solid;
+  font-size: 0.82rem;
+  background: rgba(0,0,0,0.03);
+}
+
+/* ── Divider ── */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 28px 0;
+}
+
+/* ── Both mode layout ── */
+.dual-result {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 28px;
+}
+@media (max-width: 640px) { .dual-result { grid-template-columns: 1fr; } }
+
+.mini-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+  display: none;
+  animation: fadeUp 0.3s ease;
+}
+.mini-card.visible { display: block; }
+.mini-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.mini-value {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 2.2rem;
+}
+
+/* ── Error ── */
+.error-box {
+  background: rgba(255,69,96,0.08);
+  border: 1px solid rgba(255,69,96,0.3);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 0.82rem;
+  color: var(--red);
+  margin-top: 16px;
+  display: none;
+}
+.error-box.visible { display: block; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">Retail<span>IQ</span></div>
+    <div>
+      <span class="status-dot"></span>
+      <span class="status-label">Models online</span>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('regression')">Spend Prediction</button>
+    <button class="tab" onclick="switchTab('churn')">Churn Risk</button>
+    <button class="tab" onclick="switchTab('both')">Full Profile</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PANEL 1 — REGRESSION
+  ══════════════════════════════════════════════ -->
+  <div class="panel active" id="panel-regression">
+    <div class="section-title">Predict Average Spend per Transaction</div>
+
+    <div class="form-grid" id="form-regression">
+      <div class="field"><label>Age</label><input type="number" name="Age" placeholder="35" value="35"/></div>
+      <div class="field"><label>Frequency</label><input type="number" name="Frequency" placeholder="12" value="12"/></div>
+      <div class="field"><label>Avg Qty / Transaction</label><input type="number" step="0.1" name="AvgQuantityPerTransaction" placeholder="3.5" value="3.5"/></div>
+      <div class="field"><label>Customer Tenure (days)</label><input type="number" name="CustomerTenureDays" placeholder="365" value="365"/></div>
+      <div class="field"><label>First Purchase Days Ago</label><input type="number" name="FirstPurchaseDaysAgo" placeholder="400" value="400"/></div>
+      <div class="field"><label>Preferred Day of Week (0-6)</label><input type="number" min="0" max="6" name="PreferredDayOfWeek" placeholder="2" value="2"/></div>
+      <div class="field"><label>Preferred Month (1-12)</label><input type="number" min="1" max="12" name="PreferredMonth" placeholder="6" value="6"/></div>
+      <div class="field"><label>Weekend Purchase Ratio</label><input type="number" step="0.01" name="WeekendPurchaseRatio" placeholder="0.3" value="0.3"/></div>
+      <div class="field"><label>Avg Days Between Purchases</label><input type="number" step="0.1" name="AvgDaysBetweenPurchases" placeholder="14" value="14"/></div>
+      <div class="field"><label>Unique Products</label><input type="number" name="UniqueProducts" placeholder="20" value="20"/></div>
+      <div class="field"><label>Avg Products / Transaction</label><input type="number" step="0.1" name="AvgProductsPerTransaction" placeholder="2.1" value="2.1"/></div>
+      <div class="field"><label>Zero Price Count</label><input type="number" name="ZeroPriceCount" placeholder="1" value="1"/></div>
+      <div class="field"><label>Total Transactions</label><input type="number" name="TotalTransactions" placeholder="40" value="40"/></div>
+      <div class="field"><label>Cancelled Transactions</label><input type="number" name="CancelledTransactions" placeholder="1" value="1"/></div>
+      <div class="field"><label>Return Ratio</label><input type="number" step="0.01" name="ReturnRatio" placeholder="0.05" value="0.05"/></div>
+      <div class="field"><label>Support Tickets</label><input type="number" name="SupportTicketsCount" placeholder="2" value="2"/></div>
+      <div class="field"><label>Satisfaction Score (1-5)</label><input type="number" min="1" max="5" name="SatisfactionScore" placeholder="4" value="4"/></div>
+      <div class="field">
+        <label>Loyalty Level</label>
+        <select name="LoyaltyLevel">
+          <option>Nouveau</option><option>Jeune</option>
+          <option selected>Établi</option><option>Ancien</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Basket Size</label>
+        <select name="BasketSizeCategory">
+          <option>Petit</option><option selected>Moyen</option><option>Grand</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Gender</label>
+        <select name="Gender">
+          <option value="M">Male (M)</option>
+          <option value="F">Female (F)</option>
+          <option value="Unknown">Unknown</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Product Diversity</label>
+        <select name="ProductDiversity">
+          <option>Explorateur</option>
+          <option selected>Modéré</option>
+          <option>Spécialisé</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Region</label>
+        <select name="Region">
+          <option>Afrique</option>
+          <option>Amérique du Nord</option>
+          <option>Asie</option>
+          <option>Autre</option>
+          <option>Europe centrale</option>
+          <option selected>Europe continentale</option>
+          <option>Europe de l'Est</option>
+          <option>Europe du Nord</option>
+          <option>Europe du Sud</option>
+          <option>Moyen-Orient</option>
+          <option>Océanie</option>
+          <option>UK</option>
+        </select>
+      </div>
+      <div class="field"><label>Country</label><input type="text" name="Country" placeholder="United Kingdom" value="United Kingdom"/></div>
+    </div>
+
+    <button class="btn-predict" onclick="predict('regression')">Run Prediction →</button>
+
+    <div class="result-card" id="result-regression">
+      <div class="result-main">
+        <div>
+          <div class="result-value" id="reg-value" style="color: var(--accent)">—</div>
+          <div class="result-badge" id="reg-badge">—</div>
+          <div class="result-message" id="reg-message">—</div>
+        </div>
+      </div>
+      <div class="gauge-wrap">
+        <div class="gauge-label"><span>£0</span><span>£85+</span></div>
+        <div class="gauge-track"><div class="gauge-fill" id="reg-gauge" style="width:0%; background: linear-gradient(90deg, var(--accent2), var(--accent));"></div></div>
+      </div>
+    </div>
+    <div class="error-box" id="error-regression"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PANEL 2 — CHURN
+  ══════════════════════════════════════════════ -->
+  <div class="panel" id="panel-churn">
+    <div class="section-title">Predict Churn Risk</div>
+
+    <div class="form-grid" id="form-churn">
+      <div class="field"><label>Frequency</label><input type="number" name="Frequency" placeholder="12" value="12"/></div>
+      <div class="field"><label>Total Transactions</label><input type="number" name="TotalTransactions" placeholder="40" value="40"/></div>
+      <div class="field"><label>Monetary Total (£)</label><input type="number" step="0.01" name="MonetaryTotal" placeholder="450" value="450"/></div>
+      <div class="field"><label>Monetary Avg (£)</label><input type="number" step="0.01" name="MonetaryAvg" placeholder="37.5" value="37.5"/></div>
+      <div class="field"><label>First Purchase Days Ago</label><input type="number" name="FirstPurchaseDaysAgo" placeholder="400" value="400"/></div>
+      <div class="field"><label>Avg Days Between Purchases</label><input type="number" step="0.1" name="AvgDaysBetweenPurchases" placeholder="14" value="14"/></div>
+      <div class="field"><label>Return Ratio</label><input type="number" step="0.01" name="ReturnRatio" placeholder="0.05" value="0.05"/></div>
+      <div class="field"><label>Cancel Rate</label><input type="number" step="0.01" name="CancelRate" placeholder="0.02" value="0.02"/></div>
+      <div class="field"><label>Satisfaction Score (1-5)</label><input type="number" min="1" max="5" name="SatisfactionScore" placeholder="4" value="4"/></div>
+      <div class="field"><label>Support Tickets</label><input type="number" name="SupportTicketsCount" placeholder="2" value="2"/></div>
+      <div class="field"><label>Avg Basket Value (£)</label><input type="number" step="0.01" name="AvgBasketValue" placeholder="38" value="38"/></div>
+      <div class="field"><label>Monetary Per Day (£)</label><input type="number" step="0.01" name="MonetaryPerDay" placeholder="1.2" value="1.2"/></div>
+      <div class="field">
+        <label>Spending Category</label>
+        <select name="SpendingCategory">
+          <option value="0">Low (0)</option>
+          <option value="1" selected>Medium (1)</option>
+          <option value="2">High (2)</option>
+          <option value="3">VIP (3)</option>
+        </select>
+      </div>
+      <div class="field"><label>Reg Year</label><input type="number" name="RegYear" placeholder="2022" value="2022"/></div>
+      <div class="field"><label>Reg Month</label><input type="number" min="1" max="12" name="RegMonth" placeholder="3" value="3"/></div>
+    </div>
+
+    <button class="btn-predict" onclick="predict('churn')">Assess Churn Risk →</button>
+
+    <div class="result-card" id="result-churn">
+      <div class="result-main">
+        <div>
+          <div class="result-value" id="churn-value" style="color: var(--accent)">—</div>
+          <div class="result-badge" id="churn-badge">—</div>
+        </div>
+      </div>
+      <div class="gauge-wrap">
+        <div class="gauge-label"><span>0% risk</span><span>100% risk</span></div>
+        <div class="gauge-track"><div class="gauge-fill" id="churn-gauge" style="width:0%; background: linear-gradient(90deg, var(--green), var(--red));"></div></div>
+      </div>
+      <div class="action-box" id="churn-action"></div>
+    </div>
+    <div class="error-box" id="error-churn"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PANEL 3 — BOTH
+  ══════════════════════════════════════════════ -->
+  <div class="panel" id="panel-both">
+    <div class="section-title">Full Customer Profile</div>
+    <p style="color:var(--muted); font-size:0.82rem; margin-bottom:20px;">
+      Fill in the key fields to get both spend prediction and churn risk simultaneously.
+    </p>
+
+    <div class="form-grid" id="form-both">
+      <div class="field"><label>Age</label><input type="number" name="Age" placeholder="35" value="35"/></div>
+      <div class="field"><label>Frequency</label><input type="number" name="Frequency" placeholder="12" value="12"/></div>
+      <div class="field"><label>Monetary Total</label><input type="number" step="0.01" name="MonetaryTotal" placeholder="450" value="450"/></div>
+      <div class="field"><label>Return Ratio</label><input type="number" step="0.01" name="ReturnRatio" placeholder="0.05" value="0.05"/></div>
+      <div class="field"><label>Cancel Rate</label><input type="number" step="0.01" name="CancelRate" placeholder="0.02" value="0.02"/></div>
+      <div class="field"><label>Satisfaction Score (1-5)</label><input type="number" min="1" max="5" name="SatisfactionScore" placeholder="4" value="4"/></div>
+      <div class="field"><label>Support Tickets</label><input type="number" name="SupportTicketsCount" placeholder="2" value="2"/></div>
+      <div class="field"><label>Customer Tenure (days)</label><input type="number" name="CustomerTenureDays" placeholder="365" value="365"/></div>
+      <div class="field"><label>Avg Days Between Purchases</label><input type="number" step="0.1" name="AvgDaysBetweenPurchases" placeholder="14" value="14"/></div>
+      <div class="field"><label>Unique Products</label><input type="number" name="UniqueProducts" placeholder="20" value="20"/></div>
+      <div class="field"><label>Total Transactions</label><input type="number" name="TotalTransactions" placeholder="40" value="40"/></div>
+      <div class="field"><label>Cancelled Transactions</label><input type="number" name="CancelledTransactions" placeholder="1" value="1"/></div>
+      <div class="field"><label>Negative Qty Count</label><input type="number" name="NegativeQuantityCount" placeholder="0" value="0"/></div>
+      <div class="field"><label>Zero Price Count</label><input type="number" name="ZeroPriceCount" placeholder="1" value="1"/></div>
+      <div class="field">
+        <label>Loyalty Level</label>
+        <select name="LoyaltyLevel"><option>Nouveau</option><option>Jeune</option><option selected>Établi</option><option>Ancien</option></select>
+      </div>
+      <div class="field">
+        <label>Basket Size</label>
+        <select name="BasketSizeCategory"><option>Petit</option><option selected>Moyen</option><option>Grand</option></select>
+      </div>
+    </div>
+
+    <button class="btn-predict" onclick="predictBoth()">Analyse Full Profile →</button>
+
+    <div class="dual-result">
+      <div class="mini-card" id="both-reg">
+        <div class="mini-title">Avg Spend Prediction</div>
+        <div class="mini-value" id="both-reg-val">—</div>
+        <div class="result-badge" id="both-reg-badge" style="margin-top:8px">—</div>
+        <div class="gauge-wrap" style="margin-top:14px">
+          <div class="gauge-track"><div class="gauge-fill" id="both-reg-gauge" style="width:0%; background: linear-gradient(90deg,var(--accent2),var(--accent))"></div></div>
+        </div>
+      </div>
+      <div class="mini-card" id="both-churn">
+        <div class="mini-title">Churn Risk</div>
+        <div class="mini-value" id="both-churn-val">—</div>
+        <div class="result-badge" id="both-churn-badge" style="margin-top:8px">—</div>
+        <div class="gauge-wrap" style="margin-top:14px">
+          <div class="gauge-track"><div class="gauge-fill" id="both-churn-gauge" style="width:0%; background: linear-gradient(90deg,var(--green),var(--red))"></div></div>
+        </div>
+        <div class="action-box" id="both-action" style="margin-top:14px; font-size:0.78rem"></div>
+      </div>
+    </div>
+    <div class="error-box" id="error-both"></div>
+  </div>
+
+  <div style="height:60px"></div>
+</div>
+
+<script>
+const API = '/api';
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['regression','churn','both'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+function getFormData(formId) {
+  const inputs = document.querySelectorAll(`#${formId} input, #${formId} select`);
+  const data = {};
+  inputs.forEach(i => {
+    const val = i.type === 'number' ? parseFloat(i.value) : i.value;
+    data[i.name] = isNaN(val) ? i.value : val;
+  });
+  return data;
+}
+
+function setBadge(el, text, color) {
+  el.textContent = text;
+  el.style.background = color + '22';
+  el.style.color = color;
+  el.style.border = '1px solid ' + color + '44';
+}
+
+async function predict(type) {
+  const btn = document.querySelector(`#panel-${type} .btn-predict`);
+  const resultCard = document.getElementById(`result-${type}`);
+  const errorBox = document.getElementById(`error-${type}`);
+  btn.classList.add('loading');
+  btn.textContent = 'Running…';
+  resultCard.classList.remove('visible');
+  errorBox.classList.remove('visible');
+
+  try {
+    const data = getFormData(`form-${type}`);
+    const res = await fetch(`${API}/predict/${type}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (json.error) throw new Error(json.error);
+
+    if (type === 'regression') {
+      document.getElementById('reg-value').textContent = '£' + json.prediction;
+      document.getElementById('reg-value').style.color = json.color;
+      setBadge(document.getElementById('reg-badge'), json.tier, json.color);
+      document.getElementById('reg-message').textContent = json.message;
+      document.getElementById('reg-gauge').style.width = Math.min((json.prediction / 85) * 100, 100) + '%';
+      resultCard.classList.add('visible');
+    } else {
+      document.getElementById('churn-value').textContent = json.probability + '%';
+      document.getElementById('churn-value').style.color = json.color;
+      setBadge(document.getElementById('churn-badge'), json.risk_level, json.color);
+      document.getElementById('churn-gauge').style.width = json.probability + '%';
+      const actionEl = document.getElementById('churn-action');
+      actionEl.textContent = '→ ' + json.action;
+      actionEl.style.borderColor = json.color;
+      actionEl.style.color = json.color;
+      resultCard.classList.add('visible');
+    }
+  } catch(e) {
+    errorBox.textContent = '⚠ ' + e.message;
+    errorBox.classList.add('visible');
+  } finally {
+    btn.classList.remove('loading');
+    btn.textContent = type === 'regression' ? 'Run Prediction →' : 'Assess Churn Risk →';
+  }
+}
+
+async function predictBoth() {
+  const btn = document.querySelector('#panel-both .btn-predict');
+  const errBox = document.getElementById('error-both');
+  btn.classList.add('loading');
+  btn.textContent = 'Analysing…';
+  errBox.classList.remove('visible');
+
+  const data = getFormData('form-both');
+
+  try {
+    // Run both in parallel
+    const [regRes, churnRes] = await Promise.all([
+      fetch(`${API}/predict/regression`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) }),
+      fetch(`${API}/predict/churn`,      { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) })
+    ]);
+    const reg   = await regRes.json();
+    const churn = await churnRes.json();
+
+    // Regression card
+    document.getElementById('both-reg-val').textContent = '£' + (reg.prediction ?? '—');
+    document.getElementById('both-reg-val').style.color = reg.color ?? '#00d4ff';
+    setBadge(document.getElementById('both-reg-badge'), reg.tier ?? '—', reg.color ?? '#00d4ff');
+    document.getElementById('both-reg-gauge').style.width = Math.min(((reg.prediction ?? 0) / 85) * 100, 100) + '%';
+    document.getElementById('both-reg').classList.add('visible');
+
+    // Churn card
+    document.getElementById('both-churn-val').textContent = (churn.probability ?? '—') + '%';
+    document.getElementById('both-churn-val').style.color = churn.color ?? '#00d4ff';
+    setBadge(document.getElementById('both-churn-badge'), churn.risk_level ?? '—', churn.color ?? '#00d4ff');
+    document.getElementById('both-churn-gauge').style.width = (churn.probability ?? 0) + '%';
+    const act = document.getElementById('both-action');
+    act.textContent = '→ ' + (churn.action ?? '');
+    act.style.borderColor = churn.color;
+    act.style.color = churn.color;
+    document.getElementById('both-churn').classList.add('visible');
+
+  } catch(e) {
+    errBox.textContent = '⚠ ' + e.message;
+    errBox.classList.add('visible');
+  } finally {
+    btn.classList.remove('loading');
+    btn.textContent = 'Analyse Full Profile →';
+  }
+}
+</script>
+</body>
+</html>
